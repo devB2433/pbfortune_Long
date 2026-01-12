@@ -11,137 +11,91 @@ echo ""
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# 检查是否为 root 用户
-if [ "$EUID" -ne 0 ]; then 
-    echo -e "${YELLOW}建议使用 sudo 运行此脚本${NC}"
-fi
-
-# 1. 检查 Docker 是否安装
-echo -e "${YELLOW}[1/6] 检查 Docker...${NC}"
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}Docker 未安装，正在安装...${NC}"
-    curl -fsSL https://get.docker.com | sh
-    systemctl start docker
-    systemctl enable docker
-    echo -e "${GREEN}✓ Docker 安装完成${NC}"
+# 1. 检查 Python3
+echo -e "${YELLOW}[1/5] 检查 Python3...${NC}"
+if ! command -v python3 &> /dev/null; then
+    echo -e "${RED}Python3 未安装，正在安装...${NC}"
+    apt-get update
+    apt-get install -y python3 python3-pip python3-venv
+    echo -e "${GREEN}✓ Python3 安装完成${NC}"
 else
-    echo -e "${GREEN}✓ Docker 已安装${NC}"
+    echo -e "${GREEN}✓ Python3 已安装 ($(python3 --version))${NC}"
 fi
 
-# 2. 检查 docker-compose 是否安装
-echo -e "${YELLOW}[2/6] 检查 Docker Compose...${NC}"
-if ! command -v docker-compose &> /dev/null; then
-    echo -e "${RED}Docker Compose 未安装，正在安装...${NC}"
-    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
-    echo -e "${GREEN}✓ Docker Compose 安装完成${NC}"
+# 2. 创建虚拟环境
+echo -e "${YELLOW}[2/5] 创建虚拟环境...${NC}"
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+    echo -e "${GREEN}✓ 虚拟环境创建完成${NC}"
 else
-    echo -e "${GREEN}✓ Docker Compose 已安装${NC}"
+    echo -e "${GREEN}✓ 虚拟环境已存在${NC}"
 fi
 
-# 3. 创建配置文件
-echo -e "${YELLOW}[3/6] 配置应用...${NC}"
+# 3. 安装依赖
+echo -e "${YELLOW}[3/5] 安装依赖...${NC}"
+source venv/bin/activate
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+echo -e "${GREEN}✓ 依赖安装完成${NC}"
+
+# 4. 配置文件
+echo -e "${YELLOW}[4/5] 检查配置文件...${NC}"
 if [ ! -f "config.yaml" ]; then
     cp config.yaml.example config.yaml
     echo -e "${YELLOW}请编辑 config.yaml 文件，填入你的密码和 Dify URL${NC}"
     echo -e "${YELLOW}按任意键继续...${NC}"
     read -n 1 -s
-else
-    echo -e "${GREEN}✓ 配置文件已存在${NC}"
 fi
+echo -e "${GREEN}✓ 配置文件已就绪${NC}"
 
-# 4. 创建 Dockerfile
-echo -e "${YELLOW}[4/6] 创建 Dockerfile...${NC}"
-cat > Dockerfile <<'EOF'
-FROM python:3.9-slim
-
-WORKDIR /app
-
-# 安装依赖
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-
-# 复制应用代码
-COPY . .
-
-# 暴露端口
-EXPOSE 8888
-
-# 启动应用
-CMD ["python", "app.py"]
-EOF
-echo -e "${GREEN}✓ Dockerfile 创建完成${NC}"
-
-# 5. 创建 docker-compose.yml
-echo -e "${YELLOW}[5/6] 创建 docker-compose.yml...${NC}"
-cat > docker-compose.yml <<'EOF'
-version: '3.8'
-
-services:
-  pbfortune:
-    build: .
-    container_name: pbfortune_app
-    restart: always
-    ports:
-      - "8888:8888"
-    volumes:
-      - ./config.yaml:/app/config.yaml:ro
-      - ./data:/app/data
-    environment:
-      - TZ=Asia/Shanghai
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-EOF
-echo -e "${GREEN}✓ docker-compose.yml 创建完成${NC}"
-
-# 6. 创建数据目录
+# 5. 创建数据目录
 mkdir -p data
 
-# 7. 停止旧容器（如果存在）
-echo -e "${YELLOW}[6/6] 部署应用...${NC}"
-if [ "$(docker ps -aq -f name=pbfortune_app)" ]; then
-    echo "停止旧容器..."
-    docker-compose down
+# 6. 停止旧进程
+echo -e "${YELLOW}[5/5] 部署应用...${NC}"
+if [ -f "app.pid" ]; then
+    OLD_PID=$(cat app.pid)
+    if ps -p $OLD_PID > /dev/null 2>&1; then
+        echo "停止旧进程 (PID: $OLD_PID)..."
+        kill $OLD_PID
+        sleep 2
+    fi
+    rm -f app.pid
 fi
 
-# 8. 构建并启动
-echo "构建 Docker 镜像..."
-docker-compose build
-
+# 7. 启动应用
 echo "启动应用..."
-docker-compose up -d
+source venv/bin/activate
+nohup python3 app.py > logs/app.log 2>&1 &
+echo $! > app.pid
 
-# 9. 等待应用启动
-echo "等待应用启动..."
-sleep 5
+# 8. 等待启动
+sleep 3
 
-# 10. 检查状态
-if docker ps | grep -q pbfortune_app; then
+# 9. 检查状态
+if [ -f "app.pid" ] && ps -p $(cat app.pid) > /dev/null 2>&1; then
+    PID=$(cat app.pid)
     echo ""
     echo -e "${GREEN}=========================================="
     echo "  ✓ 部署成功！"
     echo "==========================================${NC}"
     echo ""
     echo "应用信息："
-    echo "  - 容器名称: pbfortune_app"
+    echo "  - 进程 PID: $PID"
     echo "  - 监听端口: 8888"
     echo "  - 访问地址: http://localhost:8888"
     echo ""
     echo "常用命令："
-    echo "  查看日志: docker-compose logs -f"
-    echo "  重启应用: docker-compose restart"
-    echo "  停止应用: docker-compose down"
-    echo "  更新应用: git pull && docker-compose up -d --build"
+    echo "  查看日志: tail -f logs/app.log"
+    echo "  停止应用: kill \$(cat app.pid)"
+    echo "  重启应用: ./deploy.sh"
+    echo "  更新应用: git pull && ./deploy.sh"
     echo ""
     echo "数据库文件位置: ./data/trading_plans.db"
     echo ""
 else
     echo -e "${RED}部署失败，请检查日志：${NC}"
-    docker-compose logs
+    tail -n 50 logs/app.log
     exit 1
 fi
