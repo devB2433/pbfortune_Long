@@ -10,8 +10,11 @@ from contextlib import contextmanager
 
 
 class TradingPlanDB:
-    def __init__(self, db_path='trading_plans.db'):
+    def __init__(self, db_path='data/trading_plans.db'):
         self.db_path = db_path
+        # 确保数据目录存在
+        import os
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
         self.init_db()
     
     @contextmanager
