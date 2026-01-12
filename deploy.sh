@@ -92,7 +92,7 @@ mkdir -p data
 mkdir -p data/backups
 
 # 7. 备份现有数据
-echo -e "${YELLOW}[5/7] 备份现有数据...${NC}"
+echo -e "${YELLOW}[5/8] 备份现有数据...${NC}"
 if [ -f "data/trading_plans.db" ]; then
     BACKUP_FILE="data/backups/trading_plans_$(date +%Y%m%d_%H%M%S).db"
     cp data/trading_plans.db "$BACKUP_FILE"
@@ -107,8 +107,43 @@ else
     echo -e "${YELLOW}! 没有找到数据库文件，跳过备份${NC}"
 fi
 
-# 8. 部署
-echo -e "${YELLOW}[6/7] 部署应用...${NC}"
+# 8. 数据库迁移
+echo -e "${YELLOW}[6/8] 检查数据库结构...${NC}"
+if [ -f "data/trading_plans.db" ]; then
+    echo "运行数据库迁移脚本..."
+    if [ -f "add_tracking_status.py" ]; then
+        python3 add_tracking_status.py
+    else
+        echo -e "${YELLOW}! 迁移脚本不存在，尝试直接添加字段...${NC}"
+        python3 << 'PYMIGRATE'
+import sqlite3
+import os
+
+if os.path.exists('data/trading_plans.db'):
+    conn = sqlite3.connect('data/trading_plans.db')
+    cursor = conn.cursor()
+    try:
+        cursor.execute('PRAGMA table_info(trading_plans)')
+        columns = [col[1] for col in cursor.fetchall()]
+        if 'tracking_status' not in columns:
+            cursor.execute('ALTER TABLE trading_plans ADD COLUMN tracking_status TEXT DEFAULT "active"')
+            conn.commit()
+            print('✓ Added tracking_status column')
+        else:
+            print('✓ tracking_status column already exists')
+    except Exception as e:
+        print(f'Note: {e}')
+    finally:
+        conn.close()
+PYMIGRATE
+    fi
+    echo -e "${GREEN}✓ 数据库结构检查完成${NC}"
+else
+    echo -e "${YELLOW}! 数据库文件不存在，首次部署将自动创建${NC}"
+fi
+
+# 9. 部署
+echo -e "${YELLOW}[7/8] 部署应用...${NC}"
 if [ "$(docker ps -aq -f name=pbfortune_app)" ]; then
     echo "停止旧容器..."
     docker-compose down
@@ -122,7 +157,7 @@ docker-compose up -d
 
 sleep 5
 
-# 9. 检查状态
+# 10. 检查状态
 if docker ps | grep -q pbfortune_app; then
     echo ""
     echo -e "${GREEN}=========================================="
