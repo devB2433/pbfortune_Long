@@ -198,6 +198,63 @@ body {
     font-weight: 600;
 }
 
+/* 推荐度徽章 */
+.recommend-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 8px;
+    font-weight: 600;
+    border: 1.5px solid;
+}
+
+.recommend-high {
+    background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
+    color: white;
+    border-color: #FF6B6B;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.recommend-medium {
+    background: linear-gradient(135deg, #FFD93D 0%, #FFC93D 100%);
+    color: #8B4513;
+    border-color: #FFB03D;
+    box-shadow: 0 2px 8px rgba(255, 217, 61, 0.3);
+}
+
+.recommend-low {
+    background: linear-gradient(135deg, #A8E6CF 0%, #7FD8BE 100%);
+    color: #2D5F4F;
+    border-color: #7FD8BE;
+    box-shadow: 0 2px 8px rgba(168, 230, 207, 0.3);
+}
+
+/* 收益率徽章 */
+.profit-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+.profit-high {
+    background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
+    color: white;
+}
+
+.profit-medium {
+    background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+    color: white;
+}
+
+.profit-low {
+    background: linear-gradient(135deg, #A8E6CF 0%, #7FD8BE 100%);
+    color: #2D5F4F;
+}
+
 .plan-date {
     font-size: 12px;
     color: #999;

@@ -274,6 +274,17 @@ class TradingPlanManager {
         const starIcon = plan.is_starred ? '⭐' : '☆';
         const starClass = plan.is_starred ? 'starred' : '';
         
+        // 提取推荐度
+        const recommendMatch = plan.plan_content.match(/建议推荐度[：:]\s*([^\n]+)/);
+        const recommend = recommendMatch ? recommendMatch[1].trim() : null;
+        
+        // 推荐度徽章样式
+        let recommendBadge = '';
+        if (recommend) {
+            const level = recommend.includes('高') ? 'high' : recommend.includes('中') ? 'medium' : 'low';
+            recommendBadge = `<span class="recommend-badge recommend-${level}">${recommend}</span>`;
+        }
+        
         return `
             <div class="plan-card ${starClass}" data-plan-id="${plan.id}">
                 <div class="plan-header" onclick="window.tradingPlanManager.togglePlanContent(${plan.id})">
@@ -282,6 +293,7 @@ class TradingPlanManager {
                         <span class="plan-symbol">${plan.stock_symbol}</span>
                         ${plan.stock_name ? ` - ${plan.stock_name}` : ''}
                         ${versionBadge}
+                        ${recommendBadge}
                         <span class="expand-icon" id="expand-icon-${plan.id}">▼</span>
                     </div>
                     <div class="plan-date">${date}</div>
@@ -301,20 +313,38 @@ class TradingPlanManager {
         // Parse and format the plan content
         const lines = content.split('\n');
         let html = '';
+        let inPlan = false;
         
         for (let line of lines) {
             line = line.trim();
             if (!line) continue;
             
+            // 跳过推荐度（已在卡片标题显示）
+            if (line.includes('建议推荐度') || line.includes('股票名称')) {
+                continue;
+            }
+            
             if (line.includes('现货计划')) {
+                if (inPlan) html += '</div>';
                 html += `<div class="plan-section"><div class="plan-section-title">📈 ${line}</div>`;
+                inPlan = true;
             } else if (line.includes('期权计划')) {
-                html += `</div><div class="plan-section"><div class="plan-section-title">📊 ${line}</div>`;
+                if (inPlan) html += '</div>';
+                html += `<div class="plan-section"><div class="plan-section-title">📊 ${line}</div>`;
+                inPlan = true;
             } else if (line.startsWith('-')) {
+                // 提取收益率并高亮显示
+                const profitMatch = line.match(/(预期收益率|收益率)[：:]?\s*(\d+)%/);
+                if (profitMatch) {
+                    const profit = parseInt(profitMatch[2]);
+                    const profitClass = profit >= 50 ? 'profit-high' : profit >= 30 ? 'profit-medium' : 'profit-low';
+                    line = line.replace(profitMatch[0], `<span class="profit-badge ${profitClass}">${profitMatch[0]}</span>`);
+                }
                 html += `<div class="plan-target">${line}</div>`;
             }
         }
-        html += '</div>';
+        
+        if (inPlan) html += '</div>';
         
         return html;
     }
