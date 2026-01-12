@@ -278,11 +278,21 @@ class TradingPlanManager {
         const recommendMatch = plan.plan_content.match(/(建议推荐度|交易推荐度|推荐度)[：:]\s*([^\n]+)/);
         const recommend = recommendMatch ? recommendMatch[2].trim() : null;
         
+        // 推荐度翻译映射
+        const recommendTranslations = {
+            '高': 'Highly Recommend',
+            '中': 'Recommend',
+            '低': 'Low',
+            '一般': 'Recommend'
+        };
+        
         // 推荐度徽章样式
         let recommendBadge = '';
         if (recommend) {
-            const level = recommend.includes('高') ? 'high' : recommend.includes('中') ? 'medium' : 'low';
-            recommendBadge = `<span class="recommend-badge recommend-${level}">${recommend}</span>`;
+            const level = recommend.includes('高') ? 'high' : (recommend.includes('中') || recommend.includes('一般')) ? 'medium' : 'low';
+            const lang = window.i18n.getCurrentLang();
+            const displayText = lang === 'zh' ? recommend : (recommendTranslations[recommend] || recommend);
+            recommendBadge = `<span class="recommend-badge recommend-${level}">${displayText}</span>`;
         }
         
         return `
@@ -315,6 +325,31 @@ class TradingPlanManager {
         let html = '';
         let inPlan = false;
         
+        // 中英文术语映射
+        const translations = {
+            zh: {
+                spotPlan: '📈 现货计划：',
+                optionPlan: '📊 期权计划：',
+                profitRate: '预期收益率',
+                target: '目标',
+                buyPrice: '买入价',
+                sellPrice: '止盈价',
+                stopLoss: '止损价'
+            },
+            en: {
+                spotPlan: '📈 Spot Trading:',
+                optionPlan: '📊 Options Trading:',
+                profitRate: 'Expected Return',
+                target: 'Target',
+                buyPrice: 'Buy',
+                sellPrice: 'Target',
+                stopLoss: 'Stop Loss'
+            }
+        };
+        
+        const lang = window.i18n.getCurrentLang();
+        const t = translations[lang];
+        
         for (let line of lines) {
             line = line.trim();
             if (!line) continue;
@@ -324,23 +359,48 @@ class TradingPlanManager {
                 continue;
             }
             
+            // 翻译计划标题
             if (line.includes('现货计划')) {
                 if (inPlan) html += '</div>';
-                html += `<div class="plan-section"><div class="plan-section-title">📈 ${line}</div>`;
+                html += `<div class="plan-section"><div class="plan-section-title">${t.spotPlan}</div>`;
                 inPlan = true;
             } else if (line.includes('期权计划')) {
                 if (inPlan) html += '</div>';
-                html += `<div class="plan-section"><div class="plan-section-title">📊 ${line}</div>`;
+                html += `<div class="plan-section"><div class="plan-section-title">${t.optionPlan}</div>`;
                 inPlan = true;
             } else if (line.startsWith('-')) {
-                // 提取收益率并高亮显示
+                // 先提取收益率（在翻译之前）
                 const profitMatch = line.match(/(预期收益率|收益率)[：:]?\s*(\d+)%/);
+                let profit = null;
+                let profitClass = '';
                 if (profitMatch) {
-                    const profit = parseInt(profitMatch[2]);
-                    const profitClass = profit >= 50 ? 'profit-high' : profit >= 30 ? 'profit-medium' : 'profit-low';
-                    line = line.replace(profitMatch[0], `<span class="profit-badge ${profitClass}">${profitMatch[0]}</span>`);
+                    profit = parseInt(profitMatch[2]);
+                    profitClass = profit >= 50 ? 'profit-high' : profit >= 30 ? 'profit-medium' : 'profit-low';
                 }
-                html += `<div class="plan-target">${line}</div>`;
+                
+                // 翻译关键词
+                let translatedLine = line;
+                if (lang === 'en') {
+                    translatedLine = translatedLine
+                        .replace(/目标(\d+)/g, 'Target $1')
+                        .replace(/买入价/g, 'Buy Price')
+                        .replace(/止盈价/g, 'Take Profit')
+                        .replace(/止损价/g, 'Stop Loss')
+                        .replace(/（T1后调整至/g, '(Adjust to')
+                        .replace(/）/g, ')')
+                        .replace(/(预期收益率|收益率)[：:]?\s*(\d+)%/, `${t.profitRate} $2%`);
+                }
+                
+                // 高亮显示收益率
+                if (profit !== null) {
+                    const profitText = lang === 'zh' ? `预期收益率 ${profit}%` : `${t.profitRate} ${profit}%`;
+                    const profitRegex = lang === 'zh' ? 
+                        new RegExp(`(预期收益率|收益率)[：:]?\\s*${profit}%`) :
+                        new RegExp(`${t.profitRate}\\s+${profit}%`);
+                    translatedLine = translatedLine.replace(profitRegex, `<span class="profit-badge ${profitClass}">${profitText}</span>`);
+                }
+                
+                html += `<div class="plan-target">${translatedLine}</div>`;
             }
         }
         

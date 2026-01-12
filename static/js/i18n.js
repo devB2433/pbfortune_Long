@@ -22,12 +22,16 @@ const translations = {
         historyVersions: '历史版本',
         
         // 右侧面板
-        aiAssistant: '🤖 AI 交易助手',
-        unlockTitle: '🔒 请输入密码',
+        aiAssistant: '💬 AI 交易助手',
+        unlockTitle: '🔒 Enter Password',
+        unlockHint: '请输入密码解锁 AI 交易助手',
         passwordPlaceholder: '请输入密码',
-        unlockBtn: '解锁',
-        lockBtn: '🔒 锁定',
+        unlockBtnText: '解锁',
+        lockBtn: '锁定',
         saveBtn: '💾 保存交易计划',
+        
+        // Dify 输入提示
+        difyInputPlaceholder: '从上方对话中复制 AI 生成的交易计划粘贴到这里...',
         
         // 计划标题
         spotPlan: '📈 现货计划：',
@@ -42,7 +46,7 @@ const translations = {
         saveFailed: '保存失败',
         
         // 语言切换
-        language: '🌐 Language'
+        language: 'EN | 中'
     },
     en: {
         // Page Title
@@ -66,12 +70,16 @@ const translations = {
         historyVersions: 'History',
         
         // Right Panel
-        aiAssistant: '🤖 AI Trading Assistant',
+        aiAssistant: '💬 AI Trading Assistant',
         unlockTitle: '🔒 Enter Password',
+        unlockHint: 'Enter password to unlock AI Trading Assistant',
         passwordPlaceholder: 'Enter password',
-        unlockBtn: 'Unlock',
-        lockBtn: '🔒 Lock',
+        unlockBtnText: 'Unlock',
+        lockBtn: 'Lock',
         saveBtn: '💾 Save Plan',
+        
+        // Dify Input Placeholder
+        difyInputPlaceholder: 'Copy AI-generated trading plan from the conversation above and paste here...',
         
         // Plan Titles
         spotPlan: '📈 Spot Trading:',
@@ -86,7 +94,7 @@ const translations = {
         saveFailed: 'Save failed',
         
         // Language Switcher
-        language: '🌐 中文'
+        language: '中 | EN'
     }
 };
 
@@ -124,18 +132,20 @@ class I18n {
             'tradingPlansTitle': 'tradingPlans',
             'searchInput': 'searchPlaceholder',
             'unlockTitle': 'unlockTitle',
-            'passwordInput': 'passwordPlaceholder',
-            'unlockBtn': 'unlockBtn',
-            'lockBtn': 'lockBtn',
-            'saveBtn': 'saveBtn',
+            'unlockHint': 'unlockHint',
+            'chatPasswordInput': 'passwordPlaceholder',
+            'chatUnlockBtn': 'unlockBtnText',
+            'chatLockBtn': 'lockBtn',
             'aiAssistantTitle': 'aiAssistant',
+            'planInput': 'difyInputPlaceholder',
+            'savePlanBtn': 'saveBtn',
             'langBtn': 'language'
         };
         
         Object.keys(textElements).forEach(id => {
             const element = document.getElementById(id);
             if (element) {
-                if (element.tagName === 'INPUT') {
+                if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
                     element.placeholder = this.t(textElements[id]);
                 } else {
                     element.textContent = this.t(textElements[id]);
