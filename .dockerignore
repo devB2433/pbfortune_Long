@@ -1,0 +1,19 @@
+# 排除配置文件，使用 volume 挂载
+config.yaml
+
+# 排除数据目录
+data/
+
+# 排除开发文件
+*.pyc
+__pycache__/
+*.log
+.git/
+.gitignore
+README.md
+*.md
+
+# 排除部署脚本
+deploy.sh
+backup.sh
+add_tracking_status.py

@@ -8,7 +8,9 @@ services:
     ports:
       - "8888:8888"
     volumes:
+      # 必须挂载配置文件（镜像中不包含 config.yaml）
       - ./config.yaml:/app/config.yaml:ro
+      # 数据持久化
       - ./data:/app/data
     environment:
       - TZ=Asia/Shanghai
