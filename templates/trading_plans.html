@@ -4,23 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票交易计划管理 - Wicked Stock Trading</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/trading_plans.css') }}?v=1.2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/trading_plans.css') }}?v=1.3">
 </head>
 <body>
     <div class="container">
         <!-- Left Panel: Trading Plans List -->
         <div class="left-panel">
             <div class="panel-header">
-                <h1>📊 交易计划</h1>
+                <h1 id="tradingPlansTitle">📊 交易计划</h1>
                 <div class="search-box">
                     <input type="text" id="searchInput" placeholder="搜索股票代码或名称...">
                     <button id="searchBtn">🔍</button>
+                    <button id="langBtn" class="lang-btn" onclick="window.i18n.toggleLanguage()">🌐 Language</button>
                 </div>
             </div>
             
             <div class="plans-list" id="plansList">
                 <!-- Plans will be dynamically loaded here -->
-                <div class="loading">加载中...</div>
+                <div class="loading" data-i18n="loading">加载中...</div>
             </div>
         </div>
 
@@ -31,8 +32,8 @@
                 <div class="unlock-box">
                     <div style="text-align: center;">
                         <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
-                        <h2 style="margin-bottom: 10px; color: #333;">授权访问</h2>
-                        <p style="color: #999; margin-bottom: 30px;">请输入密码解锁 AI 交易助手</p>
+                        <h2 id="unlockTitle" style="margin-bottom: 10px; color: #333;">授权访问</h2>
+                        <p id="unlockHint" style="color: #999; margin-bottom: 30px;">请输入密码解锁 AI 交易助手</p>
                         <div style="margin-bottom: 20px;">
                             <input 
                                 type="password" 
@@ -66,7 +67,7 @@
             <!-- 聊天界面（默认隐藏） -->
             <div id="chatContent" style="display: none; height: 100%; flex-direction: column;">
                 <div class="chat-header">
-                    <span>💬 AI 交易助手</span>
+                    <span id="aiAssistantTitle">💬 AI 交易助手</span>
                     <button id="chatLockBtn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">锁定</button>
                 </div>
                 
@@ -97,6 +98,13 @@
 
 
 
-    <script src="{{ url_for('static', filename='js/trading_plans.js') }}?v=1.2"></script>
+    <script src="{{ url_for('static', filename='js/i18n.js') }}?v=1.0"></script>
+    <script src="{{ url_for('static', filename='js/trading_plans.js') }}?v=1.3"></script>
+    <script>
+        // 初始化语言
+        document.addEventListener('DOMContentLoaded', () => {
+            window.i18n.updateUI();
+        });
+    </script>
 </body>
 </html>

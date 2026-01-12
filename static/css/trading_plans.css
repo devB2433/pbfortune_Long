@@ -96,6 +96,12 @@ body {
     background: rgba(255, 255, 255, 0.3);
 }
 
+/* 语言切换按钮 */
+.lang-btn {
+    font-size: 14px !important;
+    padding: 8px 16px !important;
+}
+
 /* Plans List */
 .plans-list {
     flex: 1;

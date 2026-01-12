@@ -174,8 +174,8 @@ class TradingPlanManager {
             plansList.innerHTML = `
                 <div class="empty-state">
                     <div style="font-size: 48px; margin-bottom: 20px;">📋</div>
-                    <p>暂无交易计划</p>
-                    <p style="font-size: 14px; margin-top: 10px;">使用右侧 AI 助手生成交易计划</p>
+                    <p>${window.i18n.t('emptyState')}</p>
+                    <p style="font-size: 14px; margin-top: 10px;">${window.i18n.t('emptyHint')}</p>
                 </div>
             `;
             return;
@@ -194,7 +194,7 @@ class TradingPlanManager {
                 <div class="plan-section">
                     <div class="section-header">
                         <span class="section-icon">⭐</span>
-                        <span class="section-title">重点关注</span>
+                        <span class="section-title">${window.i18n.t('starredSection').replace('⭐ ', '')}</span>
                         <span class="section-count">${starred.length}</span>
                     </div>
                     <div class="section-content">
@@ -210,7 +210,7 @@ class TradingPlanManager {
                 <div class="plan-section">
                     <div class="section-header">
                         <span class="section-icon">📋</span>
-                        <span class="section-title">跟踪中</span>
+                        <span class="section-title">${window.i18n.t('trackingSection').replace('📋 ', '')}</span>
                         <span class="section-count">${active.length}</span>
                     </div>
                     <div class="section-content">
@@ -226,7 +226,7 @@ class TradingPlanManager {
                 <div class="plan-section paused-section">
                     <div class="section-header" onclick="window.tradingPlanManager.togglePausedSection()" style="cursor: pointer;">
                         <span class="section-icon">⏸️</span>
-                        <span class="section-title">暂停跟踪</span>
+                        <span class="section-title">${window.i18n.t('pausedSection').replace('⏸️ ', '')}</span>
                         <span class="section-count">${paused.length}</span>
                         <span class="expand-icon" id="paused-expand-icon">▼</span>
                     </div>
@@ -302,8 +302,8 @@ class TradingPlanManager {
                     ${preview}
                 </div>
                 <div class="plan-actions" id="plan-actions-${plan.id}" style="display: none;">
-                    <button id="view-${plan.id}" class="btn btn-primary">查看详情</button>
-                    <button id="versions-${plan.id}" class="btn btn-secondary">历史版本</button>
+                    <button id="view-${plan.id}" class="btn btn-primary">${window.i18n.t('viewDetail')}</button>
+                    <button id="versions-${plan.id}" class="btn btn-secondary">${window.i18n.t('historyVersions')}</button>
                 </div>
             </div>
         `;
