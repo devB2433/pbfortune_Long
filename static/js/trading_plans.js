@@ -274,9 +274,9 @@ class TradingPlanManager {
         const starIcon = plan.is_starred ? '⭐' : '☆';
         const starClass = plan.is_starred ? 'starred' : '';
         
-        // 提取推荐度
-        const recommendMatch = plan.plan_content.match(/建议推荐度[：:]\s*([^\n]+)/);
-        const recommend = recommendMatch ? recommendMatch[1].trim() : null;
+        // 提取推荐度（兼容多种字段名）
+        const recommendMatch = plan.plan_content.match(/(建议推荐度|交易推荐度|推荐度)[：:]\s*([^\n]+)/);
+        const recommend = recommendMatch ? recommendMatch[2].trim() : null;
         
         // 推荐度徽章样式
         let recommendBadge = '';
@@ -319,8 +319,8 @@ class TradingPlanManager {
             line = line.trim();
             if (!line) continue;
             
-            // 跳过推荐度（已在卡片标题显示）
-            if (line.includes('建议推荐度') || line.includes('股票名称')) {
+            // 跳过推荐度和股票名称（已在卡片标题显示）
+            if (line.includes('推荐度') || line.includes('股票名称')) {
                 continue;
             }
             
