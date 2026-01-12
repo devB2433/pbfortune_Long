@@ -87,16 +87,19 @@ class TradingPlanDB:
         with self.get_connection() as conn:
             # Get the latest version for this stock
             cursor = conn.execute('''
-                SELECT MAX(version) FROM trading_plans 
+                SELECT MAX(version), is_starred FROM trading_plans 
                 WHERE stock_symbol = ?
+                GROUP BY stock_symbol
             ''', (stock_symbol,))
             result = cursor.fetchone()
-            next_version = (result[0] or 0) + 1
+            next_version = (result[0] or 0) + 1 if result else 1
+            # Inherit is_starred from previous version, default to 0 for new stocks
+            is_starred = result[1] if result and result[1] is not None else 0
             
             cursor = conn.execute('''
                 INSERT INTO trading_plans 
-                (stock_symbol, stock_name, plan_content, spot_plan, option_plan, conversation_id, version, tracking_status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (stock_symbol, stock_name, plan_content, spot_plan, option_plan, conversation_id, version, tracking_status, is_starred)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 stock_symbol,
                 stock_name,
@@ -105,7 +108,8 @@ class TradingPlanDB:
                 json.dumps(option_plan) if option_plan else None,
                 conversation_id,
                 next_version,
-                tracking_status
+                tracking_status,
+                is_starred
             ))
             return cursor.lastrowid
     
