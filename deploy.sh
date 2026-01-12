@@ -87,11 +87,28 @@ services:
 EOF
 echo -e "${GREEN}✓ docker-compose.yml 创建完成${NC}"
 
-# 6. 创建数据目录
+# 6. 创建数据目录和备份目录
 mkdir -p data
+mkdir -p data/backups
 
-# 7. 部署
-echo -e "${YELLOW}[5/5] 部署应用...${NC}"
+# 7. 备份现有数据
+echo -e "${YELLOW}[5/7] 备份现有数据...${NC}"
+if [ -f "data/trading_plans.db" ]; then
+    BACKUP_FILE="data/backups/trading_plans_$(date +%Y%m%d_%H%M%S).db"
+    cp data/trading_plans.db "$BACKUP_FILE"
+    echo -e "${GREEN}✓ 数据已备份到: $BACKUP_FILE${NC}"
+    
+    # 只保留最近10个备份
+    cd data/backups
+    ls -t trading_plans_*.db 2>/dev/null | tail -n +11 | xargs -r rm
+    cd ../..
+    echo -e "${GREEN}✓ 清理旧备份（保留最近10个）${NC}"
+else
+    echo -e "${YELLOW}! 没有找到数据库文件，跳过备份${NC}"
+fi
+
+# 8. 部署
+echo -e "${YELLOW}[6/7] 部署应用...${NC}"
 if [ "$(docker ps -aq -f name=pbfortune_app)" ]; then
     echo "停止旧容器..."
     docker-compose down
@@ -105,7 +122,7 @@ docker-compose up -d
 
 sleep 5
 
-# 8. 检查状态
+# 9. 检查状态
 if docker ps | grep -q pbfortune_app; then
     echo ""
     echo -e "${GREEN}=========================================="
@@ -116,6 +133,11 @@ if docker ps | grep -q pbfortune_app; then
     echo "  - 容器名称: pbfortune_app"
     echo "  - 监听端口: 8888"
     echo "  - 访问地址: http://localhost:8888"
+    echo ""
+    echo "数据管理："
+    echo "  备份数据库: cp data/trading_plans.db data/backups/backup_\$(date +%Y%m%d_%H%M%S).db"
+    echo "  恢复数据库: cp data/backups/[备份文件] data/trading_plans.db"
+    echo "  查看备份: ls -lh data/backups/"
     echo ""
     echo "常用命令："
     echo "  查看日志: docker-compose logs -f"

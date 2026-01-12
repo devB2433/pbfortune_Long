@@ -181,7 +181,63 @@ class TradingPlanManager {
             return;
         }
 
-        plansList.innerHTML = this.plans.map(plan => this.createPlanCard(plan)).join('');
+        // 按跟踪状态分组
+        const starred = this.plans.filter(p => p.is_starred && p.tracking_status !== 'paused');
+        const active = this.plans.filter(p => !p.is_starred && p.tracking_status !== 'paused');
+        const paused = this.plans.filter(p => p.tracking_status === 'paused');
+
+        let html = '';
+
+        // 星标区域
+        if (starred.length > 0) {
+            html += `
+                <div class="plan-section">
+                    <div class="section-header">
+                        <span class="section-icon">⭐</span>
+                        <span class="section-title">重点关注</span>
+                        <span class="section-count">${starred.length}</span>
+                    </div>
+                    <div class="section-content">
+                        ${starred.map(plan => this.createPlanCard(plan)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 跟踪中区域
+        if (active.length > 0) {
+            html += `
+                <div class="plan-section">
+                    <div class="section-header">
+                        <span class="section-icon">📋</span>
+                        <span class="section-title">跟踪中</span>
+                        <span class="section-count">${active.length}</span>
+                    </div>
+                    <div class="section-content">
+                        ${active.map(plan => this.createPlanCard(plan)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 暂停跟踪区域
+        if (paused.length > 0) {
+            html += `
+                <div class="plan-section paused-section">
+                    <div class="section-header" onclick="window.tradingPlanManager.togglePausedSection()" style="cursor: pointer;">
+                        <span class="section-icon">⏸️</span>
+                        <span class="section-title">暂停跟踪</span>
+                        <span class="section-count">${paused.length}</span>
+                        <span class="expand-icon" id="paused-expand-icon">▼</span>
+                    </div>
+                    <div class="section-content" id="paused-content" style="display: none;">
+                        ${paused.map(plan => this.createPlanCard(plan)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        plansList.innerHTML = html;
 
         // Add event listeners to buttons
         this.plans.forEach(plan => {
@@ -194,6 +250,21 @@ class TradingPlanManager {
                 this.viewVersions(plan.stock_symbol);
             });
         });
+    }
+
+    togglePausedSection() {
+        const content = document.getElementById('paused-content');
+        const icon = document.getElementById('paused-expand-icon');
+        
+        if (content && icon) {
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼';
+            }
+        }
     }
 
     createPlanCard(plan) {

@@ -46,7 +46,8 @@ class TradingPlanDB:
                     status TEXT DEFAULT 'active',
                     conversation_id TEXT,
                     version INTEGER DEFAULT 1,
-                    is_starred INTEGER DEFAULT 0
+                    is_starred INTEGER DEFAULT 0,
+                    tracking_status TEXT DEFAULT 'active'
                 )
             ''')
             
@@ -59,10 +60,30 @@ class TradingPlanDB:
                 CREATE INDEX IF NOT EXISTS idx_starred 
                 ON trading_plans(is_starred DESC, created_at DESC)
             ''')
+            conn.execute('''
+                CREATE INDEX IF NOT EXISTS idx_tracking_status 
+                ON trading_plans(tracking_status, created_at DESC)
+            ''')
+            
+            # 迁移：为旧数据添加 tracking_status 字段
+            try:
+                conn.execute('SELECT tracking_status FROM trading_plans LIMIT 1')
+            except:
+                conn.execute('ALTER TABLE trading_plans ADD COLUMN tracking_status TEXT DEFAULT "active"')
+                # 自动判断所有已有计划的状态
+                conn.execute('''
+                    UPDATE trading_plans 
+                    SET tracking_status = 'active'
+                    WHERE tracking_status IS NULL
+                ''')
+                conn.commit()
     
     def save_plan(self, stock_symbol, stock_name, plan_content, 
                   spot_plan=None, option_plan=None, conversation_id=None):
-        """Save a new trading plan with version control"""
+        """Save a new trading plan with version control and auto-detect tracking status"""
+        # 自动判断跟踪状态
+        tracking_status = self._detect_tracking_status(plan_content)
+        
         with self.get_connection() as conn:
             # Get the latest version for this stock
             cursor = conn.execute('''
@@ -74,8 +95,8 @@ class TradingPlanDB:
             
             cursor = conn.execute('''
                 INSERT INTO trading_plans 
-                (stock_symbol, stock_name, plan_content, spot_plan, option_plan, conversation_id, version)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (stock_symbol, stock_name, plan_content, spot_plan, option_plan, conversation_id, version, tracking_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 stock_symbol,
                 stock_name,
@@ -83,9 +104,29 @@ class TradingPlanDB:
                 json.dumps(spot_plan) if spot_plan else None,
                 json.dumps(option_plan) if option_plan else None,
                 conversation_id,
-                next_version
+                next_version,
+                tracking_status
             ))
             return cursor.lastrowid
+    
+    def _detect_tracking_status(self, plan_content):
+        """自动检测跟踪状态"""
+        import re
+        
+        # 提取所有价格：匹配"价"后面的数字
+        prices = re.findall(r'价\s+(\d+(?:\.\d+)?)', plan_content)
+        
+        if not prices:
+            return 'active'
+        
+        # 转换为浮点数
+        prices = [float(p) for p in prices if p]
+        
+        # 全部为0 → paused
+        if prices and all(p == 0 for p in prices):
+            return 'paused'
+        
+        return 'active'
     
     def get_all_plans(self, status='active'):
         """Get all trading plans"""
@@ -150,7 +191,7 @@ class TradingPlanDB:
             return [dict(row) for row in rows]
     
     def get_latest_plans(self, status='active'):
-        """Get only the latest version of each stock's plan, starred first"""
+        """Get only the latest version of each stock's plan, grouped by tracking status"""
         with self.get_connection() as conn:
             cursor = conn.execute('''
                 SELECT t1.* FROM trading_plans t1
@@ -161,7 +202,14 @@ class TradingPlanDB:
                     GROUP BY stock_symbol
                 ) t2 ON t1.stock_symbol = t2.stock_symbol 
                      AND t1.version = t2.max_version
-                ORDER BY t1.is_starred DESC, t1.created_at DESC
+                ORDER BY 
+                    CASE t1.tracking_status
+                        WHEN 'active' THEN 1
+                        WHEN 'paused' THEN 2
+                        ELSE 3
+                    END,
+                    t1.is_starred DESC, 
+                    t1.created_at DESC
             ''', (status,))
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
