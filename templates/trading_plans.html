@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票交易计划管理 - Wicked Stock Trading</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/trading_plans.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel: Trading Plans List -->
+        <div class="left-panel">
+            <div class="panel-header">
+                <h1>📊 交易计划</h1>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索股票代码或名称...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+            </div>
+            
+            <div class="plans-list" id="plansList">
+                <!-- Plans will be dynamically loaded here -->
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Dify Chatbot -->
+        <div class="right-panel">
+            <!-- 解锁界面 -->
+            <div class="unlock-overlay" id="unlockOverlay">
+                <div class="unlock-box">
+                    <div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
+                        <h2 style="margin-bottom: 10px; color: #333;">授权访问</h2>
+                        <p style="color: #999; margin-bottom: 30px;">请输入密码解锁 AI 交易助手</p>
+                        <div style="margin-bottom: 20px;">
+                            <input 
+                                type="password" 
+                                id="chatPasswordInput" 
+                                placeholder="请输入密码"
+                                style="
+                                    width: 100%;
+                                    padding: 12px;
+                                    border: 2px solid #e5e7eb;
+                                    border-radius: 8px;
+                                    font-size: 14px;
+                                    box-sizing: border-box;
+                                "
+                            />
+                        </div>
+                        <button id="chatUnlockBtn" class="btn" style="
+                            width: 100%;
+                            padding: 12px;
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            cursor: pointer;
+                        ">解锁</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 聊天界面（默认隐藏） -->
+            <div id="chatContent" style="display: none; height: 100%; flex-direction: column;">
+                <div class="chat-header">
+                    <span>💬 AI 交易助手</span>
+                    <button id="chatLockBtn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">锁定</button>
+                </div>
+                
+                <div class="chatbot-container" id="chatbotContainer">
+                    <iframe 
+                        id="difyIframe"
+                        src="{{ dify_url }}" 
+                        style="width: 100%; height: 100%; border: none;"
+                        allow="microphone">
+                    </iframe>
+                </div>
+                
+                <div class="save-section">
+                    <textarea id="planInput" placeholder="从上方对话中复制 AI 生成的交易计划粘贴到这里..." rows="4"></textarea>
+                    <button id="savePlanBtn" class="btn btn-save">💾 保存交易计划</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plan Detail Modal -->
+    <div id="planModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+
+
+    <script src="{{ url_for('static', filename='js/trading_plans.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+# API Configuration
+api:
+  alpha_vantage:
+    key: "YOUR_API_KEY_HERE"
+    base_url: "https://www.alphavantage.co/query"
+  yahoo_finance:
+    enabled: true
+
+# Application Settings
+app:
+  host: "0.0.0.0"
+  port: 8888
+  debug: true
+  # Password for trading plan access
+  save_password: "YOUR_PASSWORD_HERE"
+
+# Dify Configuration
+dify:
+  chatbot_url: "https://udify.app/chatbot/YOUR_CHATBOT_ID"
+
+# Trading Settings
+trading:
+  default_symbols:
+    - "AAPL"
+    - "TSLA"
+    - "MSFT"
+    - "GOOGL"
+  update_interval: 60  # seconds
+
+# Alerts
+alerts:
+  enabled: true
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    from_address: "your-email@gmail.com"
+    to_address: "your-email@gmail.com"
+    password: "YOUR_EMAIL_PASSWORD"
