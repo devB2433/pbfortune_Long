@@ -4,24 +4,103 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票交易计划管理 - Wicked Stock Trading</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/trading_plans.css') }}?v=1.6">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/trading_plans.css') }}?v=4.6">
 </head>
 <body>
+    <!-- 全局头部 -->
+    <header class="global-header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">📈</span>
+                <span class="logo-text" id="tradingQuote">The market is never wrong - opinions are.</span>
+            </div>
+            <div class="lang-switch">
+                <span class="lang-option" data-lang="zh">中</span>
+                <div class="lang-slider" id="langSlider"></div>
+                <span class="lang-option" data-lang="en">EN</span>
+            </div>
+        </div>
+    </header>
+    
     <div class="container">
         <!-- Left Panel: Trading Plans List -->
         <div class="left-panel">
-            <div class="panel-header">
-                <h1 id="tradingPlansTitle">📊 交易计划</h1>
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="搜索股票代码或名称...">
-                    <button id="searchBtn">🔍</button>
-                    <button id="langBtn" class="lang-btn" onclick="window.i18n.toggleLanguage()">🌐 Language</button>
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="mock-trading" data-i18n="mockTrading">📈 模拟交易</button>
+                <button class="tab-btn" data-tab="trading-plans" data-i18n="tradingPlans">📊 交易计划</button>
+            </div>
+            
+            <!-- Mock Trading Tab -->
+            <div class="tab-content active" id="mockTradingTab">
+                <div class="trading-control-panel" id="tradingControlPanel">
+                    <div class="control-header">
+                        <h3 data-i18n="mockTrading">📈 模拟交易 <span style="font-size: 12px; color: #64748b;" data-i18n="autoRunning">(自动运行中)</span></h3>
+                        <span class="status-badge running" id="monitorStatus" data-i18n="running">运行中</span>
+                    </div>
+                    
+                    <div class="account-summary" id="accountSummary">
+                        <div class="summary-item">
+                            <span class="label" data-i18n="totalEquity">总权益</span>
+                            <span class="value" id="totalEquity">$100,000.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label" data-i18n="cash">现金</span>
+                            <span class="value" id="cash">$100,000.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label" data-i18n="marketValue">市值</span>
+                            <span class="value" id="marketValue">$0.00</span>
+                        </div>
+                        <div class="summary-item pnl">
+                            <span class="label" data-i18n="pnl">盈亏</span>
+                            <span class="value" id="totalPnl">$0.00 (0.00%)</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 收益曲线图 -->
+                    <div class="equity-chart-section">
+                        <div class="equity-chart-header">
+                            <h4 data-i18n="equityCurve">📊 权益曲线</h4>
+                            <div class="time-range-filter">
+                                <button class="time-filter-btn active" data-range="default" data-i18n="recentRange">最近</button>
+                                <button class="time-filter-btn" data-range="all" data-i18n="allRange">全部</button>
+                            </div>
+                        </div>
+                        <canvas id="equityChart"></canvas>
+                    </div>
+                    
+                    <!-- Positions List -->
+                    <div class="positions-section" id="positionsSection" style="display: none;">
+                        <h4 data-i18n="positions">📊 持仓</h4>
+                        <div class="positions-list" id="positionsList">
+                            <!-- Positions will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Trades -->
+                    <div class="trades-section" id="tradesSection" style="display: none;">
+                        <h4 data-i18n="recentTrades">📋 最近交易</h4>
+                        <div class="trades-list" id="tradesList">
+                            <!-- Trades will be loaded here -->
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <div class="plans-list" id="plansList">
-                <!-- Plans will be dynamically loaded here -->
-                <div class="loading" data-i18n="loading">加载中...</div>
+            <!-- Trading Plans Tab -->
+            <div class="tab-content" id="tradingPlansTab">
+                <div class="plans-header">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" data-i18n="searchPlaceholder" placeholder="搜索股票代码或名称...">
+                        <button id="searchBtn">🔍</button>
+                    </div>
+                </div>
+                
+                <div class="plans-list" id="plansList">
+                    <!-- Plans will be dynamically loaded here -->
+                    <div class="loading" data-i18n="loading">加载中...</div>
+                </div>
             </div>
         </div>
 
@@ -31,34 +110,38 @@
             <div class="unlock-overlay" id="unlockOverlay">
                 <div class="unlock-box">
                     <div style="text-align: center;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
-                        <h2 id="unlockTitle" style="margin-bottom: 10px; color: #333;">授权访问</h2>
-                        <p id="unlockHint" style="color: #999; margin-bottom: 30px;">请输入密码解锁 AI 交易助手</p>
+                        <h2 id="unlockTitle" data-i18n="unlockTitle" style="margin-bottom: 10px; color: var(--color-text-primary); font-family: inherit;">授权访问</h2>
+                        <p id="unlockHint" data-i18n="unlockHint" style="color: var(--color-text-secondary); margin-bottom: 30px; font-family: inherit;">请输入密码解锁 AI 交易助手</p>
                         <div style="margin-bottom: 20px;">
                             <input 
                                 type="password" 
                                 id="chatPasswordInput" 
+                                data-i18n="passwordPlaceholder"
                                 placeholder="请输入密码"
                                 style="
                                     width: 100%;
                                     padding: 12px;
-                                    border: 2px solid #e5e7eb;
-                                    border-radius: 8px;
+                                    border: 1px solid var(--color-border);
+                                    border-radius: 0;
                                     font-size: 14px;
                                     box-sizing: border-box;
+                                    font-family: inherit;
+                                    background: var(--color-bg-secondary);
+                                    color: var(--color-text-primary);
                                 "
                             />
                         </div>
-                        <button id="chatUnlockBtn" class="btn" style="
+                        <button id="chatUnlockBtn" data-i18n="unlockBtnText" class="btn" style="
                             width: 100%;
                             padding: 12px;
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                            color: white;
-                            border: none;
-                            border-radius: 8px;
+                            background: var(--macaron-lavender);
+                            color: #000000;
+                            border: 1px solid var(--macaron-lavender);
+                            border-radius: 12px;
                             font-size: 14px;
                             font-weight: 600;
                             cursor: pointer;
+                            font-family: inherit;
                         ">解锁</button>
                     </div>
                 </div>
@@ -67,8 +150,8 @@
             <!-- 聊天界面（默认隐藏） -->
             <div id="chatContent" style="display: none; height: 100%; flex-direction: column;">
                 <div class="chat-header">
-                    <span id="aiAssistantTitle">💬 AI 交易助手</span>
-                    <button id="chatLockBtn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">锁定</button>
+                    <span id="aiAssistantTitle" data-i18n="aiAssistant">💬 AI 交易助手</span>
+                    <button id="chatLockBtn" data-i18n="lockBtn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; font-family: inherit;">锁定</button>
                 </div>
                 
                 <div class="chatbot-container" id="chatbotContainer">
@@ -81,8 +164,8 @@
                 </div>
                 
                 <div class="save-section">
-                    <textarea id="planInput" placeholder="从上方对话中复制 AI 生成的交易计划粘贴到这里..." rows="4"></textarea>
-                    <button id="savePlanBtn" class="btn btn-save">💾 保存交易计划</button>
+                    <textarea id="planInput" data-i18n="difyInputPlaceholder" placeholder="从上方对话中复制 AI 生成的交易计划粘贴到这里..." rows="4" style="font-family: inherit;"></textarea>
+                    <button id="savePlanBtn" data-i18n="saveBtn" class="btn btn-save">💾 保存交易计划</button>
                 </div>
             </div>
         </div>
@@ -98,13 +181,47 @@
 
 
 
-    <script src="{{ url_for('static', filename='js/i18n.js') }}?v=1.3"></script>
-    <script src="{{ url_for('static', filename='js/trading_plans.js') }}?v=1.9"></script>
+    <script src="{{ url_for('static', filename='js/i18n.js') }}?v=2.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/mock_trading.js') }}?v=2.4"></script>
+    <script src="{{ url_for('static', filename='js/trading_plans.js') }}?v=2.3"></script>
     <script>
         // 初始化语言
         document.addEventListener('DOMContentLoaded', () => {
             window.i18n.updateUI();
+            initDailyQuote();
         });
+        
+        // 金融交易名言列表
+        const tradingQuotes = [
+            "The market is never wrong - opinions are.",
+            "Cut your losses short and let your profits run.",
+            "The trend is your friend until the end when it bends.",
+            "Risk comes from not knowing what you're doing.",
+            "In investing, what is comfortable is rarely profitable.",
+            "The stock market is a device for transferring money from the impatient to the patient.",
+            "Price is what you pay, value is what you get.",
+            "The four most dangerous words in investing are: 'This time it's different.'",
+            "Markets can remain irrational longer than you can remain solvent.",
+            "Never invest in a business you cannot understand.",
+            "The big money is not in the buying or selling, but in the waiting.",
+            "Successful investing is about managing risk, not avoiding it.",
+            "Don't look for the needle in the haystack. Just buy the haystack.",
+            "The investor's chief problem - and even his worst enemy - is likely to be himself.",
+            "Time in the market beats timing the market."
+        ];
+        
+        function initDailyQuote() {
+            const quoteElement = document.getElementById('tradingQuote');
+            if (!quoteElement) return;
+            
+            // 根据日期选择名言（每天固定一句）
+            const today = new Date();
+            const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+            const quoteIndex = dayOfYear % tradingQuotes.length;
+            
+            quoteElement.textContent = tradingQuotes[quoteIndex];
+        }
     </script>
 </body>
 </html>

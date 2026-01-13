@@ -9,8 +9,8 @@ class TradingPlanManager {
     }
 
     init() {
-        // Load initial plans
-        this.loadPlans();
+        // 不在这里加载，等待Tab切换时加载
+        // this.loadPlans();
 
         // Setup event listeners
         document.getElementById('searchBtn').addEventListener('click', () => this.searchPlans());
@@ -397,12 +397,12 @@ class TradingPlanManager {
                 html += `<div class="plan-section"><div class="plan-section-title">${t.optionPlan}</div>`;
                 inPlan = true;
             } else if (line.startsWith('-')) {
-                // 先提取收益率（在翻译之前）
-                const profitMatch = line.match(/(预期收益率|收益率)[：:]?\s*(\d+)%/);
+                // 先提取收益率（在翻译之前）- 支持小数
+                const profitMatch = line.match(/(预期收益率|收益率)[：:]?\s*(\d+(?:\.\d+)?)%/);
                 let profit = null;
                 let profitClass = '';
                 if (profitMatch) {
-                    profit = parseInt(profitMatch[2]);
+                    profit = parseFloat(profitMatch[2]);
                     profitClass = profit >= 50 ? 'profit-high' : profit >= 30 ? 'profit-medium' : 'profit-low';
                 }
                 
@@ -416,15 +416,15 @@ class TradingPlanManager {
                         .replace(/止损价/g, 'Stop Loss')
                         .replace(/（T1后调整至/g, '(Adjust to')
                         .replace(/）/g, ')')
-                        .replace(/(预期收益率|收益率)[：:]?\s*(\d+)%/, `${t.profitRate} $2%`);
+                        .replace(/(预期收益率|收益率)[：:]?\s*(\d+(?:\.\d+)?)%/, `${t.profitRate} $2%`);
                 }
                 
                 // 高亮显示收益率
                 if (profit !== null) {
                     const profitText = lang === 'zh' ? `预期收益率 ${profit}%` : `${t.profitRate} ${profit}%`;
                     const profitRegex = lang === 'zh' ? 
-                        new RegExp(`(预期收益率|收益率)[：:]?\\s*${profit}%`) :
-                        new RegExp(`${t.profitRate}\\s+${profit}%`);
+                        new RegExp(`(预期收益率|收益率)[：:]?\\s*${profit.toString().replace('.', '\\.')}%`) :
+                        new RegExp(`${t.profitRate}\\s+${profit.toString().replace('.', '\\.')}%`);
                     translatedLine = translatedLine.replace(profitRegex, `<span class="profit-badge ${profitClass}">${profitText}</span>`);
                 }
                 
@@ -545,14 +545,16 @@ class TradingPlanManager {
             if (data.status === 'success' && data.versions.length > 0) {
                 const modalBody = document.getElementById('modalBody');
                 const versions = data.versions;
+                const lang = window.i18n.getCurrentLang();
+                const t = window.i18n.t.bind(window.i18n);
                 
                 let html = `
-                    <h2>${stockSymbol} - 历史版本 (${data.total} 个版本)</h2>
+                    <h2>${stockSymbol} - ${t('historyVersions')} (${data.total} ${t('versionCount')})</h2>
                     <div style="margin-top: 20px;">
                 `;
                 
                 versions.forEach((version, index) => {
-                    const date = new Date(version.created_at).toLocaleString('zh-CN');
+                    const date = new Date(version.created_at).toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US');
                     const isLatest = index === 0;
                     html += `
                         <div style="
@@ -563,7 +565,7 @@ class TradingPlanManager {
                             background: ${isLatest ? '#f0f4ff' : 'white'};
                         ">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <strong style="color: #667eea;">v${version.version} ${isLatest ? '(最新)' : ''}</strong>
+                                <strong style="color: #667eea;">v${version.version} ${isLatest ? `(${t('latest')})` : ''}</strong>
                                 <span style="color: #999; font-size: 13px;">${date}</span>
                             </div>
                             <div style="
@@ -584,7 +586,8 @@ class TradingPlanManager {
             }
         } catch (error) {
             console.error('Failed to load versions:', error);
-            this.showError('加载版本失败');
+            const t = window.i18n.t.bind(window.i18n);
+            this.showError(t('loadVersionsFailed'));
         }
     }
 
@@ -594,9 +597,10 @@ class TradingPlanManager {
 
     unlock() {
         const password = document.getElementById('passwordInput').value.trim();
+        const t = window.i18n.t.bind(window.i18n);
         
         if (!password) {
-            this.showError('请输入密码');
+            this.showError(t('enterPassword'));
             return;
         }
         
@@ -608,7 +612,7 @@ class TradingPlanManager {
         document.getElementById('saveForm').style.display = 'block';
         document.getElementById('passwordInput').value = '';
         
-        this.showSuccess('解锁成功');
+        this.showSuccess(t('unlockSuccess'));
     }
     
     lock() {
@@ -616,31 +620,33 @@ class TradingPlanManager {
         document.getElementById('unlockSection').style.display = 'block';
         document.getElementById('saveForm').style.display = 'none';
         document.getElementById('planInput').value = '';
-        this.showSuccess('已锁定');
+        const t = window.i18n.t.bind(window.i18n);
+        this.showSuccess(t('locked'));
     }
 
     savePlanFromTextarea() {
         const content = document.getElementById('planInput').value.trim();
+        const t = window.i18n.t.bind(window.i18n);
         
         if (!content) {
-            this.showError('请输入交易计划内容');
+            this.showError(t('enterContent'));
             return;
         }
 
         const saveBtn = document.getElementById('savePlanBtn');
         saveBtn.disabled = true;
-        saveBtn.textContent = '保存中...';
+        saveBtn.textContent = t('saving');
 
         this.savePlan(content).then(success => {
             if (success) {
                 document.getElementById('planInput').value = '';
-                saveBtn.textContent = '✓ 已保存';
+                saveBtn.textContent = `✓ ${t('saved')}`;
                 setTimeout(() => {
-                    saveBtn.textContent = '💾 保存交易计划';
+                    saveBtn.textContent = t('saveBtn');
                     saveBtn.disabled = false;
                 }, 2000);
             } else {
-                saveBtn.textContent = '💾 保存交易计划';
+                saveBtn.textContent = t('saveBtn');
                 saveBtn.disabled = false;
             }
         });
@@ -681,8 +687,8 @@ class TradingPlanManager {
 }
 
 // Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
+const tradingPlansStyle = document.createElement('style');
+tradingPlansStyle.textContent = `
     @keyframes slideIn {
         from {
             transform: translateX(100%);
@@ -705,9 +711,16 @@ style.textContent = `
         }
     }
 `;
-document.head.appendChild(style);
+document.head.appendChild(tradingPlansStyle);
 
 // Initialize the manager when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.tradingPlanManager = new TradingPlanManager();
+    
+    // 如果默认显示的是交易计划Tab(不是，默认是模拟交易)，则立即加载
+    // 否则等待Tab切换时触发
+    const tradingPlansTab = document.getElementById('tradingPlansTab');
+    if (tradingPlansTab && tradingPlansTab.classList.contains('active')) {
+        window.tradingPlanManager.loadPlans();
+    }
 });

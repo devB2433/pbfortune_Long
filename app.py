@@ -7,7 +7,16 @@ from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 import yaml
 import re
+import sys
+import os
+import logging
 from database import TradingPlanDB
+
+logger = logging.getLogger(__name__)
+
+# Add mock_trade directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'mock_trade'))
+from monitor import get_monitor
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +27,31 @@ with open('config.yaml', 'r', encoding='utf-8') as f:
 
 # Initialize database
 db = TradingPlanDB()
+
+# Initialize mock trading monitor (singleton)
+monitor = get_monitor()
+
+# Auto-start monitoring on startup
+def init_monitoring():
+    """Initialize and start monitoring automatically"""
+    print("\n" + "="*60)
+    print("  🚀 自动启动模拟交易监控")
+    print("="*60)
+    
+    # Load strategies from database
+    count = monitor.load_strategies_from_db()
+    if count > 0:
+        print(f"✅ 已加载 {count} 个交易策略")
+        # Start monitoring
+        monitor.start()
+        print("✅ 监控已启动 (每小时检查一次)")
+        print("="*60 + "\n")
+    else:
+        print("⚠️  数据库中暂无交易计划,监控未启动")
+        print("="*60 + "\n")
+
+# Initialize monitoring when app starts
+init_monitoring()
 
 
 @app.route('/')
@@ -194,6 +228,203 @@ def unlock_chat():
         'status': 'success',
         'message': '验证成功'
     })
+
+
+# ============================================================
+# Mock Trading API Endpoints
+# ============================================================
+
+@app.route('/api/mock-trading/status')
+def get_trading_status():
+    """获取交易监控状态"""
+    return jsonify({
+        'status': 'success',
+        'is_running': monitor.is_running,
+        'monitored_stocks': monitor.strategy.get_all_symbols()
+    })
+
+
+@app.route('/api/mock-trading/account')
+def get_account_info():
+    """获取账户信息"""
+    summary = monitor.get_account_summary()
+    return jsonify({
+        'status': 'success',
+        'account': summary
+    })
+
+
+@app.route('/api/mock-trading/positions')
+def get_positions():
+    """获取持仓列表"""
+    positions = monitor.get_positions()
+    return jsonify({
+        'status': 'success',
+        'positions': positions
+    })
+
+
+@app.route('/api/mock-trading/trades')
+def get_trades():
+    """获取交易历史"""
+    trades = monitor.get_trades()
+    return jsonify({
+        'status': 'success',
+        'trades': trades
+    })
+
+
+@app.route('/api/mock-trading/start', methods=['POST'])
+def start_trading():
+    """启动交易监控"""
+    data = request.get_json() or {}
+    password = data.get('password', '')
+    
+    # 验证密码
+    correct_password = config.get('app', {}).get('save_password', '')
+    if password != correct_password:
+        return jsonify({
+            'status': 'error',
+            'message': '密码错误，无权操作'
+        }), 403
+    
+    if monitor.is_running:
+        return jsonify({
+            'status': 'error',
+            'message': '监控已在运行中'
+        }), 400
+    
+    # 从数据库加载策略
+    count = monitor.load_strategies_from_db()
+    
+    if count == 0:
+        return jsonify({
+            'status': 'error',
+            'message': '没有找到有效的交易计划'
+        }), 400
+    
+    # 启动监控
+    monitor.start()
+    
+    return jsonify({
+        'status': 'success',
+        'message': f'监控已启动，加载了{count}个交易策略',
+        'strategy_count': count
+    })
+
+
+@app.route('/api/mock-trading/stop', methods=['POST'])
+def stop_trading():
+    """停止交易监控"""
+    data = request.get_json() or {}
+    password = data.get('password', '')
+    
+    # 验证密码
+    correct_password = config.get('app', {}).get('save_password', '')
+    if password != correct_password:
+        return jsonify({
+            'status': 'error',
+            'message': '密码错误，无权操作'
+        }), 403
+    
+    if not monitor.is_running:
+        return jsonify({
+            'status': 'error',
+            'message': '监控未在运行'
+        }), 400
+    
+    monitor.stop()
+    
+    # 返回最终状态
+    summary = monitor.get_account_summary()
+    
+    return jsonify({
+        'status': 'success',
+        'message': '监控已停止',
+        'final_summary': summary
+    })
+
+
+@app.route('/api/mock-trading/reload', methods=['POST'])
+def reload_strategies():
+    """重新加载交易策略"""
+    data = request.get_json() or {}
+    password = data.get('password', '')
+    
+    # 验证密码
+    correct_password = config.get('app', {}).get('save_password', '')
+    if password != correct_password:
+        return jsonify({
+            'status': 'error',
+            'message': '密码错误，无权操作'
+        }), 403
+    
+    # 重新加载策略
+    count = monitor.load_strategies_from_db()
+    
+    return jsonify({
+        'status': 'success',
+        'message': f'已重新加载{count}个交易策略',
+        'strategy_count': count
+    })
+
+
+@app.route('/api/mock-trading/stats')
+def get_trading_stats():
+    """获取交易统计"""
+    stats = monitor.get_trading_stats()
+    return jsonify({
+        'status': 'success',
+        'stats': stats
+    })
+
+
+@app.route('/api/mock-trading/equity-curve')
+def get_equity_curve():
+    """获取权益曲线数据"""
+    try:
+        # 获取时间范围参数
+        time_range = request.args.get('range', 'default')  # 'all' | 'default'
+        
+        # 从数据库获取账户快照
+        if time_range == 'all':
+            snapshots = monitor.trade_db.get_account_snapshots(time_range='all')
+        else:
+            # 默认显示最近30条
+            snapshots = monitor.trade_db.get_account_snapshots(limit=30)
+        
+        # 如果没有快照，生成默认数据
+        if not snapshots:
+            from datetime import datetime, timedelta
+            now = datetime.now()
+            snapshots = [
+                {
+                    'timestamp': (now - timedelta(days=i)).strftime('%Y-%m-%d %H:%M:%S'),
+                    'total_equity': 100000.0
+                }
+                for i in range(6, -1, -1)  # 生成过去7天的数据
+            ]
+        
+        # 添加当前权益
+        from datetime import datetime
+        current_summary = monitor.get_account_summary()
+        snapshots.append({
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'total_equity': current_summary['total_equity']
+        })
+        
+        return jsonify({
+            'status': 'success',
+            'data': snapshots,
+            'range': time_range
+        })
+    except Exception as e:
+        logger.error(f"Get equity curve error: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'data': []
+        })
 
 
 if __name__ == '__main__':
