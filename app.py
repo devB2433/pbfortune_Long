@@ -176,6 +176,26 @@ def search_plans():
     })
 
 
+@app.route('/api/chat/unlock', methods=['POST'])
+def unlock_chat():
+    """Verify password for chat unlock"""
+    data = request.get_json()
+    password = data.get('password', '')
+    
+    # 验证密码
+    correct_password = config.get('app', {}).get('save_password', '')
+    if password != correct_password:
+        return jsonify({
+            'status': 'error',
+            'message': '密码错误'
+        }), 403
+    
+    return jsonify({
+        'status': 'success',
+        'message': '验证成功'
+    })
+
+
 if __name__ == '__main__':
     app.run(
         host=config.get('app', {}).get('host', '0.0.0.0'),

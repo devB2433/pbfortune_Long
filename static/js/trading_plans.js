@@ -37,7 +37,7 @@ class TradingPlanManager {
         });
     }
 
-    unlockChat() {
+    async unlockChat() {
         const password = document.getElementById('chatPasswordInput').value.trim();
         
         if (!password) {
@@ -45,15 +45,43 @@ class TradingPlanManager {
             return;
         }
         
-        // 存储密码用于保存
-        this.password = password;
-        
-        // 显示聊天界面
-        document.getElementById('unlockOverlay').style.display = 'none';
-        document.getElementById('chatContent').style.display = 'flex';
-        document.getElementById('chatPasswordInput').value = '';
-        
-        this.showSuccess('解锁成功');
+        try {
+            // 调用后端验证密码
+            const response = await fetch('/api/chat/unlock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    password: password
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.status === 403) {
+                this.showError('密码错误');
+                document.getElementById('chatPasswordInput').value = '';
+                return;
+            }
+            
+            if (data.status === 'success') {
+                // 存储密码用于保存
+                this.password = password;
+                
+                // 显示聊天界面
+                document.getElementById('unlockOverlay').style.display = 'none';
+                document.getElementById('chatContent').style.display = 'flex';
+                document.getElementById('chatPasswordInput').value = '';
+                
+                this.showSuccess(window.i18n.t('unlockSuccess'));
+            } else {
+                this.showError(data.message || '验证失败');
+            }
+        } catch (error) {
+            console.error('Unlock failed:', error);
+            this.showError('验证失败，请检查网络连接');
+        }
     }
     
     lockChat() {
