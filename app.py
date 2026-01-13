@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Wicked Stock Trading Tool - Main Application
+PB Fortune - Stock Trading Plan Manager
 """
 
 from flask import Flask, jsonify, render_template, request

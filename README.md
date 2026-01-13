@@ -1,4 +1,4 @@
-# Wicked Stock Trading Tool
+# PB Fortune - Stock Trading Plan Manager
 
 股票交易计划管理系统 - 基于 Dify AI 的智能交易助手
 
