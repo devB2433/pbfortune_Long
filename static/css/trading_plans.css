@@ -1132,6 +1132,7 @@ body {
 }
 
 /* Responsive */
+/* 平板适配 */
 @media (max-width: 1024px) {
     .container {
         flex-direction: column;
@@ -1141,5 +1142,137 @@ body {
     .right-panel {
         width: 100%;
         height: 50vh;
+    }
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+    
+    /* 头部适配 */
+    .global-header {
+        height: 56px;
+    }
+    
+    .header-content {
+        padding: 0 16px;
+    }
+    
+    .logo {
+        font-size: 14px;
+    }
+    
+    .logo-text {
+        display: none; /* 手机端隐藏名言 */
+    }
+    
+    .lang-switch {
+        width: 90px;
+        height: 28px;
+    }
+    
+    /* 容器适配 */
+    .container {
+        margin-top: 56px;
+        height: calc(100vh - 56px);
+        flex-direction: column;
+    }
+    
+    /* 左侧面板：全屏 */
+    .left-panel {
+        width: 100%;
+        height: 100%;
+        border-right: none;
+    }
+    
+    /* 右侧面板：隐藏（手机上不显示 AI 助手） */
+    .right-panel {
+        display: none;
+    }
+    
+    /* Tab 按钮 */
+    .tab-btn {
+        padding: 14px 12px;
+        font-size: 14px;
+    }
+    
+    /* 交易控制面板 */
+    .trading-control-panel {
+        padding: 16px;
+    }
+    
+    .account-summary {
+        grid-template-columns: 1fr 1fr; /* 2列布局 */
+        gap: 12px;
+    }
+    
+    .summary-item {
+        padding: 12px;
+    }
+    
+    .summary-item .label {
+        font-size: 11px;
+    }
+    
+    .summary-item .value {
+        font-size: 16px;
+    }
+    
+    /* 权益曲线 */
+    .equity-chart-section {
+        padding: 12px;
+    }
+    
+    #equityChart {
+        height: 200px !important;
+    }
+    
+    /* 交易卡片 */
+    .plan-card {
+        padding: 14px;
+        margin-bottom: 12px;
+    }
+    
+    .plan-header h3 {
+        font-size: 16px;
+    }
+    
+    .symbol-badge {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+    
+    .plan-meta {
+        font-size: 11px;
+    }
+    
+    /* 搜索框 */
+    .search-box input {
+        font-size: 14px;
+        padding: 10px 12px;
+    }
+    
+    /* 模态框 */
+    .modal-content {
+        width: 95%;
+        max-width: none;
+        margin: 5% auto;
+        padding: 20px;
+    }
+    
+    /* 交易列表 */
+    .trade-item {
+        padding: 12px;
+    }
+    
+    .trade-info {
+        font-size: 13px;
+    }
+    
+    /* 持仓列表 */
+    .position-item {
+        padding: 12px;
     }
 }
