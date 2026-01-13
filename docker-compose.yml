@@ -13,4 +13,4 @@ services:
       # 数据持久化
       - ./data:/app/data
     environment:
-      - TZ=Asia/Shanghai
+      - TZ=America/New_York
