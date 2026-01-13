@@ -9,8 +9,8 @@ import os
 INITIAL_CAPITAL = 100000.0  # 初始模拟资金 $100,000
 
 # 监控配置
-MONITOR_INTERVAL_SECONDS = 3600  # 监控频率: 每小时 (3600秒)
-# MONITOR_INTERVAL_SECONDS = 60  # 测试时可以改为每分钟
+MONITOR_INTERVAL_SECONDS = 60  # 监控频率: 每分钟 (60秒)
+# MONITOR_INTERVAL_SECONDS = 3600  # 生产环境可以改为每小时
 
 # 交易配置
 MAX_POSITION_SIZE = 0.1  # 单只股票最大仓位 10%
