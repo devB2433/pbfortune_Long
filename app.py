@@ -274,6 +274,77 @@ def get_trades():
     })
 
 
+@app.route('/api/mock-trading/monitor-logs')
+def get_monitor_logs():
+    """获取监控日志"""
+    # 获取语言参数
+    lang = request.args.get('lang', 'zh')
+    logs = monitor.get_logs(limit=50)
+    
+    # 翻译日志
+    if lang == 'en':
+        logs = translate_logs_to_english(logs)
+    
+    return jsonify({
+        'status': 'success',
+        'logs': logs
+    })
+
+
+def translate_logs_to_english(logs):
+    """将中文日志翻译为英文"""
+    translations = {
+        '当前': 'Current',
+        '持有中': 'Holding',
+        '止损': 'Stop Loss',
+        '止盈': 'Take Profit',
+        '价格高于买入价': 'Price above entry',
+        '未买入': 'Not bought',
+        '未满足买入条件': 'Entry condition not met',
+        '买入价': 'Entry',
+        '买入': 'Buy',
+        '卖出': 'Sell',
+        '盈亏': 'P&L',
+        '股': 'shares',
+        '无法获取股价': 'Failed to get price',
+        '没有交易计划': 'No trading plan',
+        '资金不足无法买入': 'Insufficient funds',
+        '买入失败': 'Buy failed',
+        '卖出失败': 'Sell failed'
+    }
+    
+    translated_logs = []
+    for log in logs:
+        message = log['message']
+        # 替换中文为英文
+        for zh, en in translations.items():
+            message = message.replace(zh, en)
+        
+        translated_logs.append({
+            'timestamp': log['timestamp'],
+            'message': message,
+            'type': log['type']
+        })
+    
+    return translated_logs
+
+
+@app.route('/api/mock-trading/trigger-monitor', methods=['POST'])
+def trigger_monitor():
+    """手动触发一次监控任务（用于测试）"""
+    try:
+        monitor.monitor_task()
+        return jsonify({
+            'status': 'success',
+            'message': '监控任务已执行'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
 @app.route('/api/mock-trading/start', methods=['POST'])
 def start_trading():
     """启动交易监控"""

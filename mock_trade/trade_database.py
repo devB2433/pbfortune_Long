@@ -82,6 +82,16 @@ class TradeDatabase:
                 )
             ''')
             
+            # 监控日志表
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS monitor_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    message TEXT NOT NULL,
+                    log_type TEXT NOT NULL,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
             # 创建索引
             conn.execute('''
                 CREATE INDEX IF NOT EXISTS idx_trades_symbol 
@@ -90,6 +100,10 @@ class TradeDatabase:
             conn.execute('''
                 CREATE INDEX IF NOT EXISTS idx_trades_timestamp 
                 ON trades(timestamp DESC)
+            ''')
+            conn.execute('''
+                CREATE INDEX IF NOT EXISTS idx_monitor_logs_timestamp 
+                ON monitor_logs(timestamp DESC)
             ''')
     
     def save_trade(
@@ -272,3 +286,41 @@ class TradeDatabase:
                 'total_commission': total_commission,
                 'unique_symbols': unique_symbols
             }
+    
+    def save_monitor_log(self, message: str, log_type: str = 'info'):
+        """
+        保存监控日志
+        
+        Args:
+            message: 日志消息
+            log_type: 日志类型 (info/success/warning/error/trade)
+        """
+        with self.get_connection() as conn:
+            conn.execute('''
+                INSERT INTO monitor_logs (message, log_type)
+                VALUES (?, ?)
+            ''', (message, log_type))
+    
+    def get_monitor_logs(self, limit: int = 50) -> List[Dict]:
+        """
+        获取监控日志
+        
+        Args:
+            limit: 返回条数
+        
+        Returns:
+            list: 日志列表
+        """
+        with self.get_connection() as conn:
+            cursor = conn.execute('''
+                SELECT 
+                    strftime('%Y-%m-%d %H:%M:%S', timestamp) as timestamp,
+                    message,
+                    log_type as type
+                FROM monitor_logs
+                ORDER BY timestamp DESC
+                LIMIT ?
+            ''', (limit,))
+            rows = cursor.fetchall()
+            # 按时间正序返回（最旧的在前）
+            return [dict(row) for row in reversed(rows)]

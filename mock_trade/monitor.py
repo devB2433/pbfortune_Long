@@ -41,6 +41,35 @@ class TradingMonitor:
         
         logger.info("Trading Monitor initialized")
     
+    def add_log(self, message: str, log_type: str = 'info'):
+        """
+        添加监控日志（写入数据库）
+        
+        Args:
+            message: 日志消息
+            log_type: 日志类型 (info/success/warning/error/trade)
+        """
+        try:
+            self.trade_db.save_monitor_log(message, log_type)
+        except Exception as e:
+            logger.error(f"Failed to save monitor log: {e}")
+    
+    def get_logs(self, limit: int = 50):
+        """
+        获取监控日志（从数据库读取）
+        
+        Args:
+            limit: 返回条数
+        
+        Returns:
+            list: 日志列表
+        """
+        try:
+            return self.trade_db.get_monitor_logs(limit)
+        except Exception as e:
+            logger.error(f"Failed to get monitor logs: {e}")
+            return []
+    
     def _restore_positions(self):
         """从数据库恢复持仓状态"""
         try:
@@ -250,39 +279,65 @@ class TradingMonitor:
         
         if current_price is None:
             logger.error(f"Failed to get price for {symbol}")
+            self.add_log(f"{symbol}: 无法获取股价", 'error')
+            return
+        
+        # 获取交易条件
+        condition = self.strategy.get_condition(symbol)
+        if not condition:
+            self.add_log(f"{symbol}: 没有交易计划", 'warning')
             return
         
         # 检查买入信号
         entry_signal = self.strategy.check_entry_signal(symbol, current_price)
         if entry_signal == 'BUY':
-            self._execute_buy(symbol, current_price)
+            # 执行买入
+            self._execute_buy_with_log(symbol, current_price, condition)
+            return
         
         # 检查卖出信号
         exit_signal = self.strategy.check_exit_signal(symbol, current_price)
         if exit_signal == 'SELL':
-            self._execute_sell(symbol, current_price)
+            # 执行卖出
+            self._execute_sell_with_log(symbol, current_price, condition)
+            return
+        
+        # 没有触发任何信号
+        if condition.quantity > 0:
+            # 持有中
+            self.add_log(
+                f"{symbol}: 当前 ${current_price:.2f}, 持有中 (止损 ${condition.stop_loss:.2f}, 止盈 ${condition.take_profit:.2f})",
+                'info'
+            )
+        else:
+            # 未持仓，未满足买入条件
+            if current_price > condition.entry_price:
+                self.add_log(
+                    f"{symbol}: 当前 ${current_price:.2f}, 价格高于买入价 ${condition.entry_price:.2f}, 未买入",
+                    'info'
+                )
+            else:
+                self.add_log(
+                    f"{symbol}: 当前 ${current_price:.2f}, 未满足买入条件 (买入价 ${condition.entry_price:.2f})",
+                    'info'
+                )
     
-    def _execute_buy(self, symbol: str, price: float):
+    def _execute_buy_with_log(self, symbol: str, price: float, condition):
         """
-        执行买入
+        执行买入并记录单行日志
         
         Args:
             symbol: 股票代码
             price: 买入价格
+            condition: 交易条件
         """
         # 计算买入数量
-        condition = self.strategy.get_condition(symbol)
-        if not condition:
-            return
-        
-        # 计算可用资金和数量
         max_investment = self.account.total_equity * MAX_POSITION_SIZE
         affordable_qty = int(max_investment / price)
         
-        # 至少买1股
         if affordable_qty < 1:
             logger.warning(f"Insufficient funds to buy {symbol}")
-            print(f"   ⚠️  {symbol}: 资金不足,无法买入")
+            self.add_log(f"{symbol}: 当前 ${price:.2f}, 资金不足无法买入", 'warning')
             return
         
         # 计算手续费
@@ -306,17 +361,24 @@ class TradingMonitor:
             
             print(f"   📥 买入 {symbol}: {affordable_qty} 股 @ ${price:.2f}")
             logger.info(f"BUY executed: {affordable_qty} {symbol} @ ${price:.2f}")
+            
+            # 单行日志
+            self.add_log(
+                f"{symbol}: 买入 {affordable_qty}股 @ ${price:.2f} (买入价 ${condition.entry_price:.2f}, 止损 ${condition.stop_loss:.2f}, 止盈 ${condition.take_profit:.2f})",
+                'trade'
+            )
         else:
             logger.error(f"BUY failed for {symbol}")
-            print(f"   ❌ 买入失败: {symbol}")
+            self.add_log(f"{symbol}: 买入失败", 'error')
     
-    def _execute_sell(self, symbol: str, price: float):
+    def _execute_sell_with_log(self, symbol: str, price: float, condition):
         """
-        执行卖出
+        执行卖出并记录单行日志
         
         Args:
             symbol: 股票代码
             price: 卖出价格
+            condition: 交易条件
         """
         position = self.account.get_position(symbol)
         if not position:
@@ -337,6 +399,14 @@ class TradingMonitor:
             pnl = (price - position.avg_price) * quantity - commission
             pnl_pct = (pnl / (position.avg_price * quantity)) * 100
             
+            # 判断是止损还是止盈
+            if price <= condition.stop_loss:
+                reason = "止损"
+            elif price >= condition.take_profit:
+                reason = "止盈"
+            else:
+                reason = "卖出"
+            
             # 保存到数据库
             self.trade_db.save_trade(
                 symbol=symbol,
@@ -350,9 +420,15 @@ class TradingMonitor:
             print(f"   📤 卖出 {symbol}: {quantity} 股 @ ${price:.2f}")
             print(f"      盈亏: ${pnl:.2f} ({pnl_pct:+.2f}%)")
             logger.info(f"SELL executed: {quantity} {symbol} @ ${price:.2f}, P&L: ${pnl:.2f}")
+            
+            # 单行日志
+            self.add_log(
+                f"{symbol}: {reason} {quantity}股 @ ${price:.2f}, 盈亏 ${pnl:.2f} ({pnl_pct:+.2f}%)",
+                'trade'
+            )
         else:
             logger.error(f"SELL failed for {symbol}")
-            print(f"   ❌ 卖出失败: {symbol}")
+            self.add_log(f"{symbol}: 卖出失败", 'error')
     
     def _update_positions(self):
         """更新所有持仓的当前价格"""

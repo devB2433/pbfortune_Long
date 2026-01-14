@@ -79,6 +79,11 @@ const translations = {
         saved: '已保存',
         saveFailed: '保存失败',
         
+        // 监控日志
+        monitorLogsLoading: '等待监控任务执行...',
+        monitorLogsError: '加载失败',
+        noMonitorLogs: '暂无监控日志',
+        
         // 语言切换
         language: 'EN | 中'
     },
@@ -160,6 +165,11 @@ const translations = {
         passwordError: 'Incorrect password, locked again',
         saved: 'Saved',
         saveFailed: 'Save failed',
+        
+        // Monitor Logs
+        monitorLogsLoading: 'Waiting for monitoring task...',
+        monitorLogsError: 'Loading failed',
+        noMonitorLogs: 'No monitor logs',
         
         // Language Switcher
         language: '中 | EN'

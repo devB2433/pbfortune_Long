@@ -14,6 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initTabNavigation();
     initEquityChart();
     initTimeRangeFilter();
+    
+    // 监听语言切换，重新加载日志
+    document.addEventListener('languageChanged', () => {
+        updateMonitorLogs();
+    });
 });
 
 function initTabNavigation() {
@@ -59,6 +64,7 @@ async function refreshData() {
         updateAccount(),
         updatePositions(),
         updateTrades(),
+        updateMonitorLogs(), // 更新监控日志
         updateEquityChart()
     ]);
 }
@@ -298,6 +304,62 @@ async function updateTrades() {
         }
     } catch (error) {
         console.error('Update trades error:', error);
+    }
+}
+
+// 更新监控日志
+async function updateMonitorLogs() {
+    try {
+        // 获取当前语言
+        const currentLang = window.i18n ? window.i18n.currentLang : 'zh';
+        
+        const response = await fetch(`/api/mock-trading/monitor-logs?lang=${currentLang}`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const logs = data.logs || [];
+            const monitorConsole = document.getElementById('monitorConsole');
+            
+            if (!monitorConsole) return;
+            
+            if (logs.length > 0) {
+                // 渲染日志
+                monitorConsole.innerHTML = logs.map(log => {
+                    const iconMap = {
+                        'info': 'ℹ️',
+                        'success': '✅',
+                        'warning': '⚠️',
+                        'error': '❌',
+                        'trade': '💰'
+                    };
+                    
+                    const icon = iconMap[log.type] || 'ℹ️';
+                    
+                    return `
+                        <div class="console-line ${log.type}">
+                            <span class="console-time">[${log.timestamp}]</span>
+                            <span class="console-icon">${icon}</span>
+                            <span class="console-message">${log.message}</span>
+                        </div>
+                    `;
+                }).join('');
+                
+                // 自动滚动到底部（使用 setTimeout 确保渲染完成）
+                setTimeout(() => {
+                    monitorConsole.scrollTop = monitorConsole.scrollHeight;
+                }, 100);
+            } else {
+                const loadingText = window.i18n ? window.i18n.t('monitorLogsLoading') : '等待监控任务执行...';
+                monitorConsole.innerHTML = `<div class="console-loading">${loadingText}</div>`;
+            }
+        }
+    } catch (error) {
+        console.error('Update monitor logs error:', error);
+        const monitorConsole = document.getElementById('monitorConsole');
+        if (monitorConsole) {
+            const errorText = window.i18n ? window.i18n.t('monitorLogsError') : '加载失败';
+            monitorConsole.innerHTML = `<div class="console-loading" style="color: #ef4444;">${errorText}</div>`;
+        }
     }
 }
 
