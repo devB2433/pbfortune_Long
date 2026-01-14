@@ -33,22 +33,24 @@ monitor = get_monitor()
 
 # Auto-start monitoring on startup
 def init_monitoring():
-    """Initialize and start monitoring automatically"""
-    print("\n" + "="*60)
-    print("  🚀 自动启动模拟交易监控")
-    print("="*60)
-    
-    # Load strategies from database
-    count = monitor.load_strategies_from_db()
-    if count > 0:
-        print(f"✅ 已加载 {count} 个交易策略")
-        # Start monitoring
-        monitor.start()
-        print("✅ 监控已启动 (每小时检查一次)")
-        print("="*60 + "\n")
-    else:
-        print("⚠️  数据库中暂无交易计划,监控未启动")
-        print("="*60 + "\n")
+    """初始化并自动启动监控"""
+    # 防止 Flask debug 模式下重复启动
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.debug:
+        print("\n" + "="*60)
+        print("  🚀 自动启动模拟交易监控")
+        print("="*60)
+        
+        # Load strategies from database
+        count = monitor.load_strategies_from_db()
+        if count > 0:
+            print(f"✅ 已加载 {count} 个交易策略")
+            # Start monitoring
+            monitor.start()
+            print("✅ 监控已启动 (每小时检查一次)")
+            print("="*60 + "\n")
+        else:
+            print("⚠️  数据库中暂无交易计划,监控未启动")
+            print("="*60 + "\n")
 
 # Initialize monitoring when app starts
 init_monitoring()
