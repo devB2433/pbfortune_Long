@@ -295,11 +295,15 @@ class TradeDatabase:
             message: 日志消息
             log_type: 日志类型 (info/success/warning/error/trade)
         """
+        # 使用当前系统时间（已配置为美东时间）
+        from datetime import datetime
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
         with self.get_connection() as conn:
             conn.execute('''
-                INSERT INTO monitor_logs (message, log_type)
-                VALUES (?, ?)
-            ''', (message, log_type))
+                INSERT INTO monitor_logs (message, log_type, timestamp)
+                VALUES (?, ?, ?)
+            ''', (message, log_type, current_time))
     
     def get_monitor_logs(self, limit: int = 50) -> List[Dict]:
         """
