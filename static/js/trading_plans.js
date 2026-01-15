@@ -295,12 +295,36 @@ class TradingPlanManager {
         }
     }
 
+    isNewThisWeek(createdAt, version) {
+        // 只对首次创建的股票（version = 1）判断是否为本周新增
+        if (version > 1) {
+            return false;
+        }
+        
+        const now = new Date();
+        const created = new Date(createdAt);
+        
+        // 获取本周一的日期（0点）
+        const monday = new Date(now);
+        monday.setHours(0, 0, 0, 0);
+        const dayOfWeek = monday.getDay();
+        const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 周日算上周
+        monday.setDate(monday.getDate() - diffToMonday);
+        
+        // 判断创建时间是否在本周一之后
+        return created >= monday;
+    }
+
     createPlanCard(plan) {
         const date = new Date(plan.created_at).toLocaleString('zh-CN');
         const preview = this.formatPlanPreview(plan.plan_content);
         const versionBadge = plan.version > 1 ? `<span class="version-badge">v${plan.version}</span>` : '';
         const starIcon = plan.is_starred ? '⭐' : '☆';
         const starClass = plan.is_starred ? 'starred' : '';
+        
+        // 判断是否是本周新增（version = 1 且在本周内创建）
+        const isNewThisWeek = this.isNewThisWeek(plan.created_at, plan.version);
+        const newBadge = isNewThisWeek ? '<span class="new-badge">NEW</span>' : '';
         
         // 提取推荐度（兼容多种字段名）
         const recommendMatch = plan.plan_content.match(/(建议推荐度|交易推荐度|推荐度)[：:]\s*([^\n]+)/);
@@ -330,6 +354,7 @@ class TradingPlanManager {
                         <button class="star-btn" id="star-${plan.id}" onclick="event.stopPropagation(); window.tradingPlanManager.toggleStar(${plan.id});" title="重点关注">${starIcon}</button>
                         <span class="plan-symbol">${plan.stock_symbol}</span>
                         ${plan.stock_name ? ` - ${plan.stock_name}` : ''}
+                        ${newBadge}
                         ${versionBadge}
                         ${recommendBadge}
                         <span class="expand-icon" id="expand-icon-${plan.id}">▼</span>

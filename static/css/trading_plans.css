@@ -931,6 +931,20 @@ body {
     border: 1px solid var(--macaron-lavender);
 }
 
+/* NEW 徽章 */
+.new-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    margin-left: 6px;
+    background: var(--macaron-mint);
+    color: #000000;
+    font-size: 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    border: 1px solid var(--macaron-mint);
+    animation: pulse 2s ease-in-out infinite;
+}
+
 /* 推荐度徽章 */
 .recommend-badge {
     display: inline-block;
@@ -1474,5 +1488,17 @@ body {
     /* 持仓列表 */
     .position-item {
         padding: 12px;
+    }
+}
+
+/* NEW 徽章脉冲动画 */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
     }
 }
