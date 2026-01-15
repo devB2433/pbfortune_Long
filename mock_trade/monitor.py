@@ -248,6 +248,14 @@ class TradingMonitor:
             self.add_log("🚫 交易市场已关闭，等待下次监控", 'info')
             return
         
+        # 每次监控前重新加载最新的交易策略
+        logger.info("重新加载交易策略...")
+        count = self.load_strategies_from_db()
+        if count == 0:
+            logger.warning("No strategies loaded from database")
+            self.add_log("⚠️ 没有找到有效的交易计划", 'warning')
+            return
+        
         symbols = self.strategy.get_all_symbols()
         
         if not symbols:
