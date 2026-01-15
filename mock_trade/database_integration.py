@@ -78,17 +78,17 @@ class TradingPlanLoader:
         # 止盈价 XXX
         
         # 买入价
-        entry_match = re.search(r'买入价[：:\s]+(\d+(?:\.\d+)?)', plan_content)
+        entry_match = re.search(r'买入价[\uff1a:\s]+[><!\uff1d=]*\s*(\d+(?:\.\d+)?)', plan_content)
         if entry_match:
             conditions['entry_price'] = float(entry_match.group(1))
         
         # 止损价
-        stop_loss_match = re.search(r'止损价[：:\s]+(\d+(?:\.\d+)?)', plan_content)
+        stop_loss_match = re.search(r'止损价[\uff1a:\s]+[><!\uff1d=]*\s*(\d+(?:\.\d+)?)', plan_content)
         if stop_loss_match:
             conditions['stop_loss'] = float(stop_loss_match.group(1))
-        
+                
         # 止盈价
-        take_profit_match = re.search(r'止盈价[：:\s]+(\d+(?:\.\d+)?)', plan_content)
+        take_profit_match = re.search(r'止盈价[\uff1a:\s]+[><!\uff1d=]*\s*(\d+(?:\.\d+)?)', plan_content)
         if take_profit_match:
             conditions['take_profit'] = float(take_profit_match.group(1))
         

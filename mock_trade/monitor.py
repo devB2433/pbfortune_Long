@@ -239,12 +239,13 @@ class TradingMonitor:
     
     def monitor_task(self):
         """监控任务 - 定期执行"""
-        logger.info("=" * 60)
+        logger.info("="*60)
         logger.info(f"Monitor task started at {datetime.now()}")
-        
+            
         # 检查市场是否开盘
         if not self.market_data.is_market_open():
             logger.info("Market is closed, skipping monitor task")
+            self.add_log("🚫 交易市场已关闭，等待下次监控", 'info')
             return
         
         symbols = self.strategy.get_all_symbols()

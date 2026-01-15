@@ -34,8 +34,9 @@ monitor = get_monitor()
 # Auto-start monitoring on startup
 def init_monitoring():
     """初始化并自动启动监控"""
-    # 防止 Flask debug 模式下重复启动
-    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true' or not app.debug:
+    # Flask debug 模式下，只在 reloader 进程中启动监控
+    # os.environ.get('WERKZEUG_RUN_MAIN') 为 'true' 表示 reloader 进程
+    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         print("\n" + "="*60)
         print("  🚀 自动启动模拟交易监控")
         print("="*60)
@@ -296,6 +297,7 @@ def get_monitor_logs():
 def translate_logs_to_english(logs):
     """将中文日志翻译为英文"""
     translations = {
+        '交易市场已关闭，等待下次监控': 'Market is closed, waiting for next monitor',
         '当前': 'Current',
         '持有中': 'Holding',
         '止损': 'Stop Loss',

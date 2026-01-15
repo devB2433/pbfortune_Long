@@ -27,6 +27,9 @@ class TradingCondition:
 class TradingStrategy:
     """交易策略引擎"""
     
+    # 价格容差百分比（1%）
+    PRICE_TOLERANCE = 0.01
+    
     def __init__(self):
         self.conditions: Dict[str, TradingCondition] = {}
     
@@ -74,11 +77,16 @@ class TradingStrategy:
         if condition.entry_price is None:
             return None
         
-        # 简单的价格触发策略: 价格低于或等于买入价
-        if current_price <= condition.entry_price:
+        # 买入价格区间: 买入价 * (1 ± 1%)
+        entry_lower = condition.entry_price * (1 - self.PRICE_TOLERANCE)
+        entry_upper = condition.entry_price * (1 + self.PRICE_TOLERANCE)
+        
+        # 在买入价格区间内触发
+        if entry_lower <= current_price <= entry_upper:
             logger.info(
                 f"BUY signal for {symbol}: "
-                f"current ${current_price:.2f} <= entry ${condition.entry_price:.2f}"
+                f"current ${current_price:.2f} in range [${entry_lower:.2f}, ${entry_upper:.2f}] "
+                f"(entry ${condition.entry_price:.2f} ±1%)"
             )
             return 'BUY'
         
@@ -108,21 +116,31 @@ class TradingStrategy:
         if condition.quantity == 0:
             return None
         
-        # 检查止损
-        if condition.stop_loss and current_price <= condition.stop_loss:
-            logger.warning(
-                f"STOP LOSS triggered for {symbol}: "
-                f"current ${current_price:.2f} <= stop loss ${condition.stop_loss:.2f}"
-            )
-            return 'SELL'
+        # 检查止损: 止损价 * (1 ± 1%)
+        if condition.stop_loss:
+            stop_loss_lower = condition.stop_loss * (1 - self.PRICE_TOLERANCE)
+            stop_loss_upper = condition.stop_loss * (1 + self.PRICE_TOLERANCE)
+            
+            if stop_loss_lower <= current_price <= stop_loss_upper:
+                logger.warning(
+                    f"STOP LOSS triggered for {symbol}: "
+                    f"current ${current_price:.2f} in range [${stop_loss_lower:.2f}, ${stop_loss_upper:.2f}] "
+                    f"(stop loss ${condition.stop_loss:.2f} ±1%)"
+                )
+                return 'SELL'
         
-        # 检查止盈
-        if condition.take_profit and current_price >= condition.take_profit:
-            logger.info(
-                f"TAKE PROFIT triggered for {symbol}: "
-                f"current ${current_price:.2f} >= take profit ${condition.take_profit:.2f}"
-            )
-            return 'SELL'
+        # 检查止盈: 止盈价 * (1 ± 1%)
+        if condition.take_profit:
+            take_profit_lower = condition.take_profit * (1 - self.PRICE_TOLERANCE)
+            take_profit_upper = condition.take_profit * (1 + self.PRICE_TOLERANCE)
+            
+            if take_profit_lower <= current_price <= take_profit_upper:
+                logger.info(
+                    f"TAKE PROFIT triggered for {symbol}: "
+                    f"current ${current_price:.2f} in range [${take_profit_lower:.2f}, ${take_profit_upper:.2f}] "
+                    f"(take profit ${condition.take_profit:.2f} ±1%)"
+                )
+                return 'SELL'
         
         return None
     
