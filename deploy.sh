@@ -127,30 +127,21 @@ else
     echo -e "${YELLOW}! 数据库文件不存在，首次部署将自动创建${NC}"
 fi
 
-# 9. 处理 git pull 冲突
-echo -e "${YELLOW}[7/8] 更新代码...${NC}"
-if [ -d ".git" ]; then
-    echo "检查代码更新..."
-    git fetch origin main
-    
-    # 检查是否有本地修改
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        echo -e "${YELLOW}发现本地修改，自动暂存...${NC}"
-        git stash save "自动备份-$(date +%Y%m%d_%H%M%S)"
-        echo -e "${GREEN}✓ 本地修改已暂存${NC}"
-    fi
-    
-    # 拉取最新代码
-    git pull origin main
-    
-    # 恢复 config.yaml
-    if git stash list | head -1 | grep -q "自动备份"; then
-        git checkout stash@{0} -- config.yaml 2>/dev/null || true
-        echo -e "${GREEN}✓ 配置文件已恢复${NC}"
-    fi
-else
-    echo -e "${YELLOW}! 非 Git 仓库，跳过更新${NC}"
+# 9. 验证配置文件
+echo -e "${YELLOW}[7/8] 检查配置文件...${NC}"
+if [ ! -f "config.yaml" ]; then
+    echo -e "${RED}错误: config.yaml 不存在，请先创建配置文件${NC}"
+    echo -e "${YELLOW}提示: cp config.yaml.example config.yaml 然后编辑${NC}"
+    exit 1
 fi
+
+# 显示 debug 模式状态
+if grep -q "debug: true" config.yaml; then
+    echo -e "${YELLOW}! 当前为 Debug 模式（建议生产环境设置为 false）${NC}"
+else
+    echo -e "${GREEN}✓ Debug 模式已关闭（生产环境推荐）${NC}"
+fi
+echo -e "${GREEN}✓ 配置文件检查完成${NC}"
 
 # 10. 部署
 echo -e "${YELLOW}[8/8] 部署应用...${NC}"
